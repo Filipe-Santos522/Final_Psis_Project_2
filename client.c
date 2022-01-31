@@ -28,16 +28,17 @@ int key;
 void * updateBoard(void * arg){
     while (read(sock_fd, &m_s, sizeof(m_s)) == sizeof(m_s)){
         pthread_mutex_lock(&draw_mutex);
+        draw_ball(my_win, &prev_message.ball, false);
+        draw_ball(my_win, &m_s.ball, true);
         for (int j = 0; j < MAX_NUMBER_OF_PLAYERS; j++){
-            char c = '_';
-            if (prev_message.paddles[j].length != -1)
+            if (prev_message.paddles[j].length > 0)
                 draw_paddle(my_win, &prev_message.paddles[j], false, '_');
-            if (m_s.paddles[j].length != -1){
-                if (j == 0)
-                    c = '=';
-                draw_paddle(my_win, &m_s.paddles[j], true, c);
-            }
         }
+        draw_paddle(my_win, &m_s.paddles[0], true, '=');
+        for (int j = 1; j < MAX_NUMBER_OF_PLAYERS; j++)
+            if (m_s.paddles[j].length > 0)
+                draw_paddle(my_win, &m_s.paddles[j], true, '_');
+            
         wrefresh(my_win);
         mvwprintw(message_win, 1,1,"%c key pressed", key); // Print pressed key
         wrefresh(message_win);
@@ -103,10 +104,10 @@ int main(int argc, char* argv[]){
     pthread_mutex_init(&draw_mutex, NULL);
     pthread_create(&board_thread, NULL, updateBoard, NULL);
     while (1) {
-        pthread_mutex_lock(&draw_mutex);
+        /*pthread_mutex_lock(&draw_mutex);
         wmove(my_win, 0, 0); // Move cursor to (0,0) (purely aesthetic)
         wrefresh(my_win);
-        pthread_mutex_lock(&draw_mutex);
+        pthread_mutex_unlock(&draw_mutex);*/
         key = wgetch(my_win); // Get key from user
 
         // Check which key was pressed (113 is "q" for quit)
