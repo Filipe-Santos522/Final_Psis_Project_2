@@ -30,48 +30,44 @@ void * ClientThreads(void * arg){
         printf("message key:%d\n", m_client.key);
         int index = *(int *)arg;
         if(m_client.type==4){
-            int sock_aux;
+            //int sock_aux;
             /* disconnect - remove user from list */
-            sock_aux= client_socks[index];
-            client_socks[index] = client_socks[Num_players - 1];
-            client_socks[Num_players - 1]=sock_aux;
-            if (close(client_socks[Num_players-1]) == -1){
+            //sock_aux= client_socks[index];
+            if (close(client_socks[index]) == -1){
                 perror("closing socket");
                 exit(-1);
             }
+            client_socks[index] = -1;
             printf("deu disconnect- worth\n");
-            client_socks[index] = client_socks[Num_players - 1];
-            Players_paddle[index] = Players_paddle[Num_players - 1];
-            Players_score[index] = Players_score[Num_players - 1];
-            client_index[Num_players-1]=index;
-            client_index[index]=-1;
-            Players_paddle[Num_players - 1].length = -1;
-            for (int j = 0; j < Num_players; j++){
+            Players_score[index] = 0;
+            client_index[index] = -1;
+            Players_paddle[index].length = -1;
+            for (int j = 0; j < MAX_NUMBER_OF_PLAYERS; j++){
                 m.paddles[j] = Players_paddle[j];
             }
-            Players_score[Num_players - 1] = 0;
             Num_players--;
             pthread_mutex_unlock(&draw_mutex);
             return;
         }
         if (m_client.key == KEY_UP || m_client.key == KEY_DOWN || m_client.key == KEY_LEFT || m_client.key == KEY_RIGHT){
-            moove_paddle(&Players_paddle[index], Players_paddle, m_client.key, Num_players, index, &m.ball);
-            for (int j = 0; j < Num_players; j++){
+            moove_paddle(&Players_paddle[index], Players_paddle, m_client.key, MAX_NUMBER_OF_PLAYERS, index, &m.ball);
+            for (int j = 0; j < MAX_NUMBER_OF_PLAYERS; j++){
                 m.paddles[j] = Players_paddle[j];
             }   
         }
         ordered_message.ball = m.ball;
         ordered_message.score = m.score;
-        for (int k = 0; k < Num_players; k++){
+        for (int k = 0; k < MAX_NUMBER_OF_PLAYERS; k++){
                 ordered_message.paddles[k] = m.paddles[k];
         }
 
-        for (int k = 0; k < Num_players; k++){
+        for (int k = 0; k < MAX_NUMBER_OF_PLAYERS; k++){
             ordered_message.index=k;
-            if (write(client_socks[k], &ordered_message, sizeof(m)) == -1){
-                perror("client thread write\n");
-                exit(-1);
-            }
+            if (client_socks[k] != -1)
+                if (write(client_socks[k], &ordered_message, sizeof(m)) == -1){
+                    perror("client thread write\n");
+                    exit(-1);
+                }
         }
         
 
@@ -87,13 +83,14 @@ void * moveBall(void * arg){
         pthread_mutex_lock(&draw_mutex);
 
         moove_ball(&m.ball, Players_paddle, Num_players, Players_score);
-        for(int aux=0; aux<Num_players; aux++){
-            printf("Move_ball:  Id:%d\n", aux);
-
+        for(int aux=0; aux<MAX_NUMBER_OF_PLAYERS; aux++){  
             m.index=aux;
-            if (write(client_socks[aux], &m, sizeof(message_server)) == -1){
-                perror("writing on stream socket");
-                exit(-1); 
+            if (client_socks[aux] != -1 && client_index[aux] != -1){
+                printf("Move_ball:  Id:%d\nclient_socks[%d] = %d\n", client_index[aux], aux, client_socks[aux]);
+                if (write(client_socks[aux], &m, sizeof(message_server)) == -1){
+                    perror("writing on stream socket");
+                    exit(-1); 
+                }
             }
         }
             
@@ -109,17 +106,19 @@ int main(){
     pthread_t *client_tids = malloc(MAX_NUMBER_OF_PLAYERS * sizeof(pthread_t));
     pthread_t ball_thread;
     client_socks = malloc(MAX_NUMBER_OF_PLAYERS * sizeof(int));
+    
     pthread_mutex_init(&draw_mutex, NULL);
 
     int sock_fd=Socket_creation();
     Socket_identification(sock_fd);
     place_ball_random(&m.ball);
     for (int a = 0; a < MAX_NUMBER_OF_PLAYERS; a++){
+        client_socks[a] = -1;
         Players_paddle[a].length = -1;
         client_index[a]=-1;
     }
     
-    if(listen(sock_fd, 10) == -1) {
+    if(listen(sock_fd, MAX_NUMBER_OF_PLAYERS) == -1) {
 		perror("listen");
 		exit(-1);
 	}
@@ -142,15 +141,16 @@ int main(){
         m.paddles[Num_players]=Players_paddle[Num_players];
         m.score = 0;
         if( write(client_socks[Num_players], &m, sizeof(message_server))==-1){
-            perror("client thread write\n");
+            perror("main write\n");
             exit(-1);
         }
         int help=0;
         while(client_index[help]!=-1){
             help++;
+            printf("help = %d\n", help);
         }
         client_index[help]=Num_players;
-        printf("help:%d\n", help);
+        printf("help:%d\nclient_index[help] = %d\n", help, client_index[help]);
         pthread_create(&client_tids[Num_players], NULL, ClientThreads, (void *) &client_index[help]);
         printf("thread created\n");
         Num_players++;

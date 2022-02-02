@@ -34,7 +34,7 @@ void * updateBoard(void * arg){
             if (prev_message.paddles[j].length > 0)
                 draw_paddle(my_win, &prev_message.paddles[j], false, '_');
         }
-        draw_paddle(my_win, &m_s.paddles[0], true, '=');
+        //draw_paddle(my_win, &m_s.paddles[0], true, '=');
         for (int j = 0; j < MAX_NUMBER_OF_PLAYERS; j++){
             if(j!=m_s.index){
                 if (m_s.paddles[j].length > 0)
@@ -81,6 +81,9 @@ int main(int argc, char* argv[]){
         exit(-1);
     }
 
+    pthread_t board_thread;
+    pthread_create(&board_thread, NULL, updateBoard, NULL);
+
     if (read(sock_fd, &m_s, sizeof(m_s)) != sizeof(m_s)){
         perror("first read");
         exit(-1);
@@ -106,9 +109,8 @@ int main(int argc, char* argv[]){
     box(message_win, 0 , 0);	
 	wrefresh(message_win);
 
-    pthread_t board_thread;
     pthread_mutex_init(&draw_mutex, NULL);
-    pthread_create(&board_thread, NULL, updateBoard, NULL);
+    
     while (1) {
         
         /*pthread_mutex_lock(&draw_mutex);

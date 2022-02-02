@@ -41,7 +41,7 @@ void moove_paddle (paddle_position_t * paddle, paddle_position_t * paddles, int 
     if (direction == KEY_UP){
         paddle_aux=paddle->y-1;
         for (int i = 0; i < numPlayers; i++)
-            if (paddle_aux == paddles[i].y && (paddles[i].x-paddles[index].x < 5 && paddles[i].x-paddles[index].x > -5))
+            if (paddle_aux == paddles[i].y && (paddles[i].x-paddles[index].x < 5 && paddles[i].x-paddles[index].x > -5) && paddles[i].length > 0)
                 flag=1;
 
         if (paddle->y  != 1 && flag!=1){
@@ -59,7 +59,7 @@ void moove_paddle (paddle_position_t * paddle, paddle_position_t * paddles, int 
     if (direction == KEY_DOWN){
         paddle_aux=paddle->y+1;
         for (int i = 0; i < numPlayers; i++)
-            if (paddle_aux == paddles[i].y && (paddles[i].x-paddles[index].x < 5 && paddles[i].x-paddles[index].x > -5))
+            if (paddle_aux == paddles[i].y && (paddles[i].x-paddles[index].x < 5 && paddles[i].x-paddles[index].x > -5) && paddles[i].length > 0)
                 flag=1;
 
         if (paddle->y  != WINDOW_SIZE - 2 && flag!=1){
@@ -77,7 +77,7 @@ void moove_paddle (paddle_position_t * paddle, paddle_position_t * paddles, int 
     if (direction == KEY_LEFT){
         paddle_aux=paddle->x-1;
         for (int i = 0; i < numPlayers; i++)
-            if (paddle->y == paddles[i].y && (paddles[i].x-paddle_aux < 5 && paddles[i].x-paddle_aux > -5)){
+            if (paddle->y == paddles[i].y && (paddles[i].x-paddle_aux < 5 && paddles[i].x-paddle_aux > -5) && paddles[i].length > 0){
                 if(i != index)
                     flag=1;
             }
@@ -98,7 +98,7 @@ void moove_paddle (paddle_position_t * paddle, paddle_position_t * paddles, int 
     if (direction == KEY_RIGHT){
         paddle_aux=paddle->x+1;
         for (int i = 0; i < numPlayers; i++)
-            if (paddle->y == paddles[i].y && (paddles[i].x-paddle_aux < 5 && paddles[i].x-paddle_aux > -5)){
+            if (paddle->y == paddles[i].y && (paddles[i].x-paddle_aux < 5 && paddles[i].x-paddle_aux > -5) && paddles[i].length > 0){
                 if(i != index)
                     flag=1;
             }
