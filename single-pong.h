@@ -22,6 +22,7 @@ typedef struct message_server{
     ball_position_t ball;
     paddle_position_t paddles[MAX_NUMBER_OF_PLAYERS];
     int score;
+    int index;
 } message_server;
 
 typedef struct message_client {

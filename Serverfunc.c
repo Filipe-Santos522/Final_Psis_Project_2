@@ -11,7 +11,7 @@ int Socket_creation(){
     int sock_fd;
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (sock_fd == -1){
-        perror("socket: ");
+        perror("socket: creation failed");
         exit(-1);
     }
     return sock_fd;

@@ -35,9 +35,14 @@ void * updateBoard(void * arg){
                 draw_paddle(my_win, &prev_message.paddles[j], false, '_');
         }
         draw_paddle(my_win, &m_s.paddles[0], true, '=');
-        for (int j = 1; j < MAX_NUMBER_OF_PLAYERS; j++)
-            if (m_s.paddles[j].length > 0)
-                draw_paddle(my_win, &m_s.paddles[j], true, '_');
+        for (int j = 0; j < MAX_NUMBER_OF_PLAYERS; j++){
+            if(j!=m_s.index){
+                if (m_s.paddles[j].length > 0)
+                    draw_paddle(my_win, &m_s.paddles[j], true, '_');
+            }else{
+                draw_paddle(my_win, &m_s.paddles[j], true, '=');
+            }
+        }
             
         wrefresh(my_win);
         mvwprintw(message_win, 1,1,"%c key pressed", key); // Print pressed key
@@ -53,7 +58,8 @@ void * updateBoard(void * arg){
 }
 
 int main(int argc, char* argv[]){
-
+    m_s.index=0;
+    prev_message.index=0;
     // Check terminal arguments
     if(argc!=2){
             printf("Error in arguments\n");
@@ -104,6 +110,7 @@ int main(int argc, char* argv[]){
     pthread_mutex_init(&draw_mutex, NULL);
     pthread_create(&board_thread, NULL, updateBoard, NULL);
     while (1) {
+        
         /*pthread_mutex_lock(&draw_mutex);
         wmove(my_win, 0, 0); // Move cursor to (0,0) (purely aesthetic)
         wrefresh(my_win);
