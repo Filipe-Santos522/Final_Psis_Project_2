@@ -113,10 +113,6 @@ int main(int argc, char* argv[]){
     
     while (1) {
         
-        /*pthread_mutex_lock(&draw_mutex);
-        wmove(my_win, 0, 0); // Move cursor to (0,0) (purely aesthetic)
-        wrefresh(my_win);
-        pthread_mutex_unlock(&draw_mutex);*/
         key = wgetch(my_win); // Get key from user
 
         // Check which key was pressed (113 is "q" for quit)

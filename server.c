@@ -30,13 +30,7 @@ void * ClientThreads(void * arg){
         printf("message key:%d\n", m_client.key);
         int index = *(int *)arg;
         if(m_client.type==4){
-            //int sock_aux;
             /* disconnect - remove user from list */
-            //sock_aux= client_socks[index];
-            if (close(client_socks[index]) == -1){
-                perror("closing socket");
-                exit(-1);
-            }
             client_socks[index] = -1;
             printf("deu disconnect- worth\n");
             Players_score[index] = 0;
@@ -47,7 +41,7 @@ void * ClientThreads(void * arg){
             }
             Num_players--;
             pthread_mutex_unlock(&draw_mutex);
-            return;
+            return NULL;
         }
         if (m_client.key == KEY_UP || m_client.key == KEY_DOWN || m_client.key == KEY_LEFT || m_client.key == KEY_RIGHT){
             moove_paddle(&Players_paddle[index], Players_paddle, m_client.key, MAX_NUMBER_OF_PLAYERS, index, &m.ball);
@@ -74,6 +68,7 @@ void * ClientThreads(void * arg){
         printf("sent message to client %d\n", index);
         pthread_mutex_unlock(&draw_mutex);
     }
+    return NULL;
 }
 
 void * moveBall(void * arg){
@@ -96,7 +91,7 @@ void * moveBall(void * arg){
             
         pthread_mutex_unlock(&draw_mutex);
     }
-    return;
+    return NULL;
 }
 
 int main(){
@@ -122,36 +117,37 @@ int main(){
 		perror("listen");
 		exit(-1);
 	}
+    int x;
     pthread_create(&ball_thread, NULL, moveBall, NULL);
     while(1){
-		client_socks[Num_players] = accept(sock_fd, NULL, NULL);
-		if(client_socks[Num_players] == -1) {
-            printf("é isto?\n");
-			perror("accept");
-			exit(-1);
-		}
-        printf("SOCK_NUM:%d\n", client_socks[Num_players]);
-        printf("accepted new client %d\n", Num_players);
-        new_paddle(&Players_paddle[Num_players], PADLE_SIZE, Players_paddle, Num_players, m.ball);
-        Players_score[Num_players]=0;
-
-        if(Num_players + 1<MAX_NUMBER_OF_PLAYERS)
-            m.paddles[Num_players + 1].length=-1;
-
-        m.paddles[Num_players]=Players_paddle[Num_players];
-        m.score = 0;
-        if( write(client_socks[Num_players], &m, sizeof(message_server))==-1){
-            perror("main write\n");
-            exit(-1);
-        }
+		x = accept(sock_fd, NULL, NULL);
         int help=0;
         while(client_index[help]!=-1){
             help++;
             printf("help = %d\n", help);
         }
-        client_index[help]=Num_players;
+
+        client_socks[help]=x;
+		if(x == -1) {
+            printf("é isto?\n");
+			perror("accept");
+			exit(-1);
+		}
+        printf("SOCK_NUM:%d\n", client_socks[help]);
+        printf("accepted new client %d\n", Num_players);
+        new_paddle(&Players_paddle[help], PADLE_SIZE, Players_paddle, Num_players, m.ball);
+        Players_score[help]=0;
+
+        m.paddles[help]=Players_paddle[help];
+        m.score = 0;
+        if( write(client_socks[help], &m, sizeof(message_server))==-1){
+            perror("main write\n");
+            exit(-1);
+        }
+        
+        client_index[help]=help;
         printf("help:%d\nclient_index[help] = %d\n", help, client_index[help]);
-        pthread_create(&client_tids[Num_players], NULL, ClientThreads, (void *) &client_index[help]);
+        pthread_create(&client_tids[help], NULL, ClientThreads, (void *) &client_index[help]);
         printf("thread created\n");
         Num_players++;
     }
