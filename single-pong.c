@@ -37,6 +37,7 @@ void draw_paddle(WINDOW *win, paddle_position_t * paddle, int delete, char c){
 void moove_paddle (paddle_position_t * paddle, paddle_position_t * paddles, int direction, int numPlayers, int index, ball_position_t *ball){
     int paddle_aux;
     int flag=0;
+    int flag2=0;
 
     if (direction == KEY_UP){
         paddle_aux=paddle->y-1;
@@ -44,8 +45,12 @@ void moove_paddle (paddle_position_t * paddle, paddle_position_t * paddles, int 
             if (paddle_aux == paddles[i].y && (paddles[i].x-paddles[index].x < 5 && paddles[i].x-paddles[index].x > -5) && paddles[i].length > 0)
                 flag=1;
 
+        for (int i = 0; i < numPlayers; i++)
+            if (ball->y == paddles[i].y + 1 && (ball->x - paddles[i].x < 3 && ball->x - paddles[i].x > -3))
+                flag2=1;
+
         if (paddle->y  != 1 && flag!=1){
-            if (ball->y == paddle->y - 1 && ball->y != 1 && (ball->x - paddle->x < 3 && ball->x - paddle->x > -3)){
+            if (ball->y == paddle->y - 1 && ball->y != 1 && (ball->x - paddle->x < 3 && ball->x - paddle->x > -3) && flag2!=1){
                 ball->y--;
                 ball->up_hor_down = -1;
                 paddle->y--;
@@ -58,12 +63,18 @@ void moove_paddle (paddle_position_t * paddle, paddle_position_t * paddles, int 
 
     if (direction == KEY_DOWN){
         paddle_aux=paddle->y+1;
-        for (int i = 0; i < numPlayers; i++)
+        for (int i = 0; i < numPlayers; i++){
             if (paddle_aux == paddles[i].y && (paddles[i].x-paddles[index].x < 5 && paddles[i].x-paddles[index].x > -5) && paddles[i].length > 0)
                 flag=1;
+        }
+
+            for (int i = 0; i < numPlayers; i++){
+            if (ball->y == paddles[i].y - 1 && (ball->x - paddles[i].x < 3 && ball->x - paddles[i].x > -3))
+                flag2=1;
+            }
 
         if (paddle->y  != WINDOW_SIZE - 2 && flag!=1){
-            if (ball->y == paddle->y + 1 && ball->y != WINDOW_SIZE - 2 && (ball->x - paddle->x < 3 && ball->x - paddle->x > -3)){
+            if (ball->y == paddle->y + 1 && ball->y != WINDOW_SIZE - 2 && (ball->x - paddle->x < 3 && ball->x - paddle->x > -3)&& flag2!=1){
                 ball->y++;
                 ball->up_hor_down = 1;
                 paddle->y++;
@@ -82,14 +93,14 @@ void moove_paddle (paddle_position_t * paddle, paddle_position_t * paddles, int 
                     flag=1;
             }
 
-
+    
         if (paddle->x  != 3 && flag!=1){
             if (ball->y == paddle->y && ball->x != 1 &&  ball->x - paddle->x == -3){
                 ball->x--;
                 ball->left_ver_right = -1;
                 paddle->x--;
             }
-            else if (paddle->y != ball->y || ball->x - paddle->x <= -3)
+            else if (paddle->y != ball->y || ball->x - paddle->x < -3)
                 paddle->x--;
         }
         
@@ -109,7 +120,7 @@ void moove_paddle (paddle_position_t * paddle, paddle_position_t * paddles, int 
                 ball->left_ver_right = 1;
                 paddle->x++;
             }
-            else if (paddle->y != ball->y || ball->x - paddle->x >= 3)
+            else if (paddle->y != ball->y || ball->x - paddle->x > 3)
                 paddle->x++;
         }
     }

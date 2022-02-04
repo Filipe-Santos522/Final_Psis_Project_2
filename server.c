@@ -22,7 +22,6 @@ void * ClientThreads(void * arg){
     
     int index = *(int *)arg;    
     message_client m_client;
-    message_server ordered_message;
     printf("entrou na thread: %d\n", index);
     while(read(client_socks[index], &m_client, sizeof(m_client)) == sizeof(m_client)){
         printf("entrou no read\n");
@@ -49,22 +48,18 @@ void * ClientThreads(void * arg){
                 m.paddles[j] = Players_paddle[j];
             }   
         }
-        ordered_message.ball = m.ball;
-        ordered_message.score = m.score;
-        for (int k = 0; k < MAX_NUMBER_OF_PLAYERS; k++){
-                ordered_message.paddles[k] = m.paddles[k];
-        }
+
 
         for (int k = 0; k < MAX_NUMBER_OF_PLAYERS; k++){
-            ordered_message.index=k;
+            m.index=k;
+            m.score=Players_score[k];
             if (client_socks[k] != -1)
-                if (write(client_socks[k], &ordered_message, sizeof(m)) == -1){
+                if (write(client_socks[k], &m, sizeof(m)) == -1){
                     perror("client thread write\n");
                     exit(-1);
                 }
         }
         
-
         printf("sent message to client %d\n", index);
         pthread_mutex_unlock(&draw_mutex);
     }
@@ -80,6 +75,7 @@ void * moveBall(void * arg){
         moove_ball(&m.ball, Players_paddle, Num_players, Players_score);
         for(int aux=0; aux<MAX_NUMBER_OF_PLAYERS; aux++){  
             m.index=aux;
+            m.score=Players_score[aux];
             if (client_socks[aux] != -1 && client_index[aux] != -1){
                 printf("Move_ball:  Id:%d\nclient_socks[%d] = %d\n", client_index[aux], aux, client_socks[aux]);
                 if (write(client_socks[aux], &m, sizeof(message_server)) == -1){

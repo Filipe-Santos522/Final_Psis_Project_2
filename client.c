@@ -55,6 +55,7 @@ void * updateBoard(void * arg){
         prev_message.score = m_s.score;
         pthread_mutex_unlock(&draw_mutex);
     }
+    return NULL;
 }
 
 int main(int argc, char* argv[]){
@@ -112,7 +113,7 @@ int main(int argc, char* argv[]){
     pthread_mutex_init(&draw_mutex, NULL);
     
     while (1) {
-        
+
         key = wgetch(my_win); // Get key from user
 
         // Check which key was pressed (113 is "q" for quit)
