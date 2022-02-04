@@ -21,26 +21,27 @@
 
 int sock_fd;
 message_server m_s, prev_message;
-pthread_mutex_t draw_mutex;
 WINDOW *my_win, *message_win;
 int key;
 
+/*Draws everything everytime it receives a message*/
 void * updateBoard(void * arg){
-    while (read(sock_fd, &m_s, sizeof(m_s)) == sizeof(m_s)){
-        pthread_mutex_lock(&draw_mutex);
-        draw_ball(my_win, &prev_message.ball, false);
-        draw_ball(my_win, &m_s.ball, true);
-        for (int j = 0; j < MAX_NUMBER_OF_PLAYERS; j++){
+    while (read(sock_fd, &m_s, sizeof(m_s)) == sizeof(m_s)){   //waits for message
+            
+        draw_ball(my_win, &prev_message.ball, false);         //erases last ball
+        draw_ball(my_win, &m_s.ball, true);                   //Draws new ball
+
+        for (int j = 0; j < MAX_NUMBER_OF_PLAYERS; j++){          //erases all paddles
             if (prev_message.paddles[j].length > 0)
                 draw_paddle(my_win, &prev_message.paddles[j], false, '_');
         }
         //draw_paddle(my_win, &m_s.paddles[0], true, '=');
         for (int j = 0; j < MAX_NUMBER_OF_PLAYERS; j++){
             if(j!=m_s.index){
-                if (m_s.paddles[j].length > 0)
+                if (m_s.paddles[j].length > 0)                      //draw all paddles exept player
                     draw_paddle(my_win, &m_s.paddles[j], true, '_');
             }else{
-                draw_paddle(my_win, &m_s.paddles[j], true, '=');
+                draw_paddle(my_win, &m_s.paddles[j], true, '=');    //draw player paddle
             }
         }
             
@@ -50,10 +51,9 @@ void * updateBoard(void * arg){
         mvwprintw(message_win, 2,1,"Player score: %d", m_s.score); // Print player score
         wrefresh(message_win);
         prev_message.ball = m_s.ball;
-        for (int j = 0; j < MAX_NUMBER_OF_PLAYERS; j++)
+        for (int j = 0; j < MAX_NUMBER_OF_PLAYERS; j++) //stores current paddle positions
             prev_message.paddles[j] = m_s.paddles[j];
         prev_message.score = m_s.score;
-        pthread_mutex_unlock(&draw_mutex);
     }
     return NULL;
 }
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]){
     }
 
     pthread_t board_thread;
-    pthread_create(&board_thread, NULL, updateBoard, NULL);
+    pthread_create(&board_thread, NULL, updateBoard, NULL); //thread that updates board on each message
 
     if (read(sock_fd, &m_s, sizeof(m_s)) != sizeof(m_s)){
         perror("first read");
@@ -110,7 +110,6 @@ int main(int argc, char* argv[]){
     box(message_win, 0 , 0);	
 	wrefresh(message_win);
 
-    pthread_mutex_init(&draw_mutex, NULL);
     
     while (1) {
 
@@ -136,7 +135,6 @@ int main(int argc, char* argv[]){
         }
     }
     endwin();
-    pthread_mutex_destroy(&draw_mutex);
     close(sock_fd);
     exit(0);
 }

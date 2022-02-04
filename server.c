@@ -18,20 +18,22 @@ int Num_players=0;
 int *client_socks;
 int *client_index;
 
+
+
+/*A thread for each player that receives player imput and responds with board state*/
 void * ClientThreads(void * arg){
     
     int index = *(int *)arg;    
     message_client m_client;
-    printf("entrou na thread: %d\n", index);
+
     while(read(client_socks[index], &m_client, sizeof(m_client)) == sizeof(m_client)){
-        printf("entrou no read\n");
-        pthread_mutex_lock(&draw_mutex);
+
+        pthread_mutex_lock(&draw_mutex); //prevents changing/accessing the same parameters at the same time as other ClientThreads/Moveball function
         printf("message key:%d\n", m_client.key);
         int index = *(int *)arg;
         if(m_client.type==4){
-            /* disconnect - remove user from list */
+            /* disconnect - remove user from list -> all "-1" means the paddle is inactive*/
             client_socks[index] = -1;
-            printf("deu disconnect- worth\n");
             Players_score[index] = 0;
             client_index[index] = -1;
             Players_paddle[index].length = -1;
@@ -42,7 +44,7 @@ void * ClientThreads(void * arg){
             pthread_mutex_unlock(&draw_mutex);
             return NULL;
         }
-        if (m_client.key == KEY_UP || m_client.key == KEY_DOWN || m_client.key == KEY_LEFT || m_client.key == KEY_RIGHT){
+        if (m_client.key == KEY_UP || m_client.key == KEY_DOWN || m_client.key == KEY_LEFT || m_client.key == KEY_RIGHT){ //move paddle from client request
             moove_paddle(&Players_paddle[index], Players_paddle, m_client.key, MAX_NUMBER_OF_PLAYERS, index, &m.ball);
             for (int j = 0; j < MAX_NUMBER_OF_PLAYERS; j++){
                 m.paddles[j] = Players_paddle[j];
@@ -50,7 +52,7 @@ void * ClientThreads(void * arg){
         }
 
 
-        for (int k = 0; k < MAX_NUMBER_OF_PLAYERS; k++){
+        for (int k = 0; k < MAX_NUMBER_OF_PLAYERS; k++){ //send all clients the current board state
             m.index=k;
             m.score=Players_score[k];
             if (client_socks[k] != -1)
@@ -66,14 +68,16 @@ void * ClientThreads(void * arg){
     return NULL;
 }
 
+
+/*A thread that periodically changes ball position and sends board state to all players*/
 void * moveBall(void * arg){
 
     while(1){
         sleep(1);
-        pthread_mutex_lock(&draw_mutex);
+        pthread_mutex_lock(&draw_mutex); //prevents changing/accessing the same parameters at the same time as other ClientThreads/Moveball function
 
-        moove_ball(&m.ball, Players_paddle, Num_players, Players_score);
-        for(int aux=0; aux<MAX_NUMBER_OF_PLAYERS; aux++){  
+        moove_ball(&m.ball, Players_paddle, Num_players, Players_score); //change ball position
+        for(int aux=0; aux<MAX_NUMBER_OF_PLAYERS; aux++){   //send to all clients
             m.index=aux;
             m.score=Players_score[aux];
             if (client_socks[aux] != -1 && client_index[aux] != -1){
@@ -100,7 +104,7 @@ int main(){
     
     pthread_mutex_init(&draw_mutex, NULL);
 
-    int sock_fd=Socket_creation();
+    int sock_fd=Socket_creation(); // Open socket for communication
     Socket_identification(sock_fd);
     place_ball_random(&m.ball);
     for (int a = 0; a < MAX_NUMBER_OF_PLAYERS; a++){
@@ -109,41 +113,37 @@ int main(){
         client_index[a]=-1;
     }
     
-    if(listen(sock_fd, MAX_NUMBER_OF_PLAYERS) == -1) {
+    if(listen(sock_fd, MAX_NUMBER_OF_PLAYERS) == -1) { 
 		perror("listen");
 		exit(-1);
 	}
     int x;
-    pthread_create(&ball_thread, NULL, moveBall, NULL);
+    pthread_create(&ball_thread, NULL, moveBall, NULL); //thread to periodically change ball position
     while(1){
-		x = accept(sock_fd, NULL, NULL);
+		x = accept(sock_fd, NULL, NULL); //waits for player connects
         int help=0;
-        while(client_index[help]!=-1){
+        while(client_index[help]!=-1){ //checks for an available spot on the player vector
             help++;
-            printf("help = %d\n", help);
         }
 
-        client_socks[help]=x;
+        client_socks[help]=x; //puts the descriptor on the vector
 		if(x == -1) {
-            printf("é isto?\n");
 			perror("accept");
 			exit(-1);
 		}
-        printf("SOCK_NUM:%d\n", client_socks[help]);
         printf("accepted new client %d\n", Num_players);
-        new_paddle(&Players_paddle[help], PADLE_SIZE, Players_paddle, Num_players, m.ball);
+        new_paddle(&Players_paddle[help], PADLE_SIZE, Players_paddle, Num_players, m.ball);//initiallizes paddle position
         Players_score[help]=0;
 
         m.paddles[help]=Players_paddle[help];
         m.score = 0;
-        if( write(client_socks[help], &m, sizeof(message_server))==-1){
+        if( write(client_socks[help], &m, sizeof(message_server))==-1){ //sends connect message
             perror("main write\n");
             exit(-1);
         }
         
         client_index[help]=help;
-        printf("help:%d\nclient_index[help] = %d\n", help, client_index[help]);
-        pthread_create(&client_tids[help], NULL, ClientThreads, (void *) &client_index[help]);
+        pthread_create(&client_tids[help], NULL, ClientThreads, (void *) &client_index[help]); //create client thread
         printf("thread created\n");
         Num_players++;
     }

@@ -218,11 +218,6 @@ void update_board(WINDOW* my_win, message_server m, ball_position_t prev_ball, p
         draw_paddle(my_win, &m.paddles[i], true, '_');
         i++;
     }
-/*while (m.paddles[i].length != -1 || i == MAX_NUMBER_OF_PLAYERS) {
-        draw_paddle(my_win, &prev_paddles[i], false, '_');
-        draw_paddle(my_win, &m.paddles[i], true, '_');
-        i++;
-    }*/
 }
 
 
